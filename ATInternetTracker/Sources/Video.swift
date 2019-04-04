@@ -35,8 +35,8 @@ import Foundation
 /// Wrapper class for Video tracking
 public class Video: RichMedia {
     
-    override init(player: MediaPlayer) {
-        super.init(player: player)
+    override init(tracker: Tracker, playerId: Int) {
+        super.init(tracker: tracker, playerId: playerId)
         broadcastMode = BroadcastMode.clip
         type = "video"
     }
@@ -48,7 +48,7 @@ public class Video: RichMedia {
             self.duration = 86400
         }
         
-        if (self.duration > 0){
+        if (self.duration >= 0){
             _ = self.tracker.setParam("m1", value: duration)
         }
     }
@@ -82,7 +82,7 @@ public class Videos: NSObject {
             self.player.tracker.delegate?.warningDidOccur?("A Video with the same name already exists.")
             return video
         } else {
-            let video = Video(player: player)
+            let video = Video(tracker: self.player.tracker, playerId: self.player.playerId)
             video.mediaLabel = mediaLabel
             video.duration = duration
             

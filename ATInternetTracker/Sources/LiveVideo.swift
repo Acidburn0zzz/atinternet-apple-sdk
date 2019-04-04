@@ -36,8 +36,8 @@ import Foundation
 /// Wrapper class for Live Video tracking
 public class LiveVideo: RichMedia {
    
-    override init(player: MediaPlayer) {
-        super.init(player: player)
+    override init(tracker: Tracker, playerId: Int) {
+        super.init(tracker: tracker, playerId: playerId)
         broadcastMode = BroadcastMode.live
         type = "video"
     }
@@ -70,7 +70,7 @@ public class LiveVideos: NSObject {
             self.player.tracker.delegate?.warningDidOccur?("A LiveVideo with the same name already exists.")
             return video
         } else {
-            let video = LiveVideo(player: player)
+            let video = LiveVideo(tracker: self.player.tracker, playerId: self.player.playerId)
             video.mediaLabel = mediaLabel
             
             self.list[mediaLabel] = video

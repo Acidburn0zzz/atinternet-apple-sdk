@@ -58,6 +58,10 @@ class DynamicRefresher {
         self.start()
     }
     
+    func isValid() -> Bool {
+        return self.timer.isValid
+    }
+    
     public func stop() {
         self.timer.invalidate()
         self.elapsedTime = 0

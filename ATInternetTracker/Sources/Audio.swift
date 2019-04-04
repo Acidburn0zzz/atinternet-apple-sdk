@@ -36,8 +36,8 @@ import Foundation
 /// Wrap class for audio media tracking
 public class Audio: RichMedia {
     
-    override init(player: MediaPlayer) {
-        super.init(player: player)
+    override init(tracker: Tracker, playerId: Int) {
+        super.init(tracker: tracker, playerId: playerId)
         broadcastMode = BroadcastMode.clip
         type = "audio"
     }
@@ -49,7 +49,7 @@ public class Audio: RichMedia {
             self.duration = 86400
         }
         
-        if (self.duration > 0){
+        if (self.duration >= 0){
             _ = self.tracker.setParam("m1", value: duration)
         }
     }
@@ -84,7 +84,7 @@ public class Audios: NSObject {
             self.player.tracker.delegate?.warningDidOccur?("An Audio with the same name already exists.")
             return audio
         } else {
-            let audio = Audio(player: player)
+            let audio = Audio(tracker: self.player.tracker, playerId: self.player.playerId)
             audio.mediaLabel = mediaLabel
             audio.duration = duration
             

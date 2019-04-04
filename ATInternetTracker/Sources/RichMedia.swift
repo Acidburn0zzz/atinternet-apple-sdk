@@ -79,9 +79,6 @@ public class RichMedia : BusinessObject {
         case download = 9
     }
     
-    /// Player instance
-    var player: MediaPlayer
-    
     /// Refresh timer
     var timer: Timer?
     
@@ -98,6 +95,8 @@ public class RichMedia : BusinessObject {
             _isEmbedded = isEmbedded
         }
     }
+    
+    var isPlaying: Bool = false
     
     /// Media type
     @objc var type: String = ""
@@ -174,8 +173,39 @@ public class RichMedia : BusinessObject {
     /// Refresh Duration
     var refreshDuration: Int = 5
     
+    /// Player Id
+    var playerId: Int = -1
+    
     /// Duration
-    @objc public var duration: Int = 0
+    private var _duration: Int = 0
+    @objc public var duration: Int {
+        get {
+            return self._duration
+        }
+        set {
+            guard newValue > 0 else {
+                return
+            }
+            
+            if !isPlaying {
+                self._duration = newValue
+                return
+            }
+            
+            /// Playing with refresh
+            if let valid = self.chronoRefresh?.isValid(), valid {
+                self.chronoRefresh?.pause()
+                self._duration = newValue
+                self.sendRefresh()
+                self.chronoRefresh?.resume()
+                return
+            }
+            
+            /// Playing without refresh
+            self._duration = newValue
+            self.sendRefresh()
+        }
+    }
     
     /// Action. see RichMediaAction
     @available(*, deprecated,message: "useless, property set when send called")
@@ -191,9 +221,9 @@ public class RichMedia : BusinessObject {
     let DynamicRefreshDefaultConfiguration = [0:5, 1:15, 5:30, 10: 60]
     var chronoRefresh: DynamicRefresher?
     
-    init(player: MediaPlayer) {
-        self.player = player
-        super.init(tracker: player.tracker)
+    init(tracker: Tracker, playerId: Int) {
+        self.playerId = playerId
+        super.init(tracker: tracker)
     }
     
     /// Set parameters in buffer
@@ -203,7 +233,7 @@ public class RichMedia : BusinessObject {
         
         _ = self.tracker.setParam("p", value: buildMediaName(), options: encodingOption)
         
-        _ = self.tracker.setParam("plyr", value: player.playerId)
+        _ = self.tracker.setParam("plyr", value: self.playerId)
         
         _ = self.tracker.setParam("m6", value: broadcastMode == BroadcastMode.clip ? "clip" : "live")
         
@@ -280,6 +310,7 @@ public class RichMedia : BusinessObject {
     /// Send a play action. No refresh hits will be sent after the action.
     @objc public func sendPlayWithoutRefresh() {
         _ = self.tracker.setParam("a", value: "play")
+        self.isPlaying = true
         setPlayOrInfoParams()
         self.tracker.dispatcher.dispatch([self])
     }
@@ -314,6 +345,7 @@ public class RichMedia : BusinessObject {
             [unowned self] in self.sendRefresh()
         }
         _ = self.tracker.setParam("a", value: "play")
+        self.isPlaying = true
         setPlayOrInfoParams()
         self.tracker.dispatcher.dispatch([self])
         self.chronoRefresh?.start()
@@ -329,6 +361,7 @@ public class RichMedia : BusinessObject {
     
     /// Resume a previous pause() call
     @objc public func sendResume() {
+        self.isPlaying = true
         self.chronoRefresh?.resume()
         _ = self.tracker.setParam("a", value: "play")
         setPlayOrInfoParams()
@@ -364,6 +397,7 @@ public class RichMedia : BusinessObject {
     
     /// Send a stop action tracking
     @objc public func sendStop() {
+        self.isPlaying = false
         self.chronoRefresh?.stop()
         _ = self.tracker.setParam("a", value: "stop")
         
@@ -402,7 +436,7 @@ public class RichMedia : BusinessObject {
         self.tracker.dispatcher.dispatch([self])
     }
     
-    /// Medthod called on the timer tick
+    /// Method called on the timer tick
     @objc func sendRefresh() {
         _ = self.tracker.setParam("a", value: "refresh")
         self.tracker.dispatcher.dispatch([self])
